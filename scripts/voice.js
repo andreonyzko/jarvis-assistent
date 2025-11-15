@@ -30,10 +30,10 @@ recognizer.onresult = (event) => {
         if (window.speechSynthesis.speaking) {
           window.speechSynthesis.cancel();
         }
-        
+
         setState("awake");
         reconhecendoComando = true;
-        
+
         // Para o reconhecimento principal com segurança
         try {
           recognizer.stop();
@@ -41,7 +41,7 @@ recognizer.onresult = (event) => {
         } catch (e) {
           console.log("Erro ao parar recognizer:", e);
         }
-        
+
         // Aguarda um pouco e inicia comando
         setTimeout(() => {
           reconheceComando();
@@ -77,7 +77,8 @@ recognizer.start();
 // Função para reconhecer comando e integrar Perplexity
 function reconheceComando() {
   setState("awake");
-  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const Recognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
   const recComando = new Recognition();
   recComando.lang = "pt-BR";
   recComando.continuous = false;
@@ -100,8 +101,10 @@ function reconheceComando() {
 
     try {
       console.log("Obtendo resposta para:", comando);
-      if(!localStorage.getItem("AIkey")){
-        falar("Você precisa configurar a chave da Inteligencia Artificial para prosseguir com os comandos de voz");
+      if (!localStorage.getItem("IAkey")) {
+        falar(
+          "Você precisa configurar a chave da Inteligencia Artificial para prosseguir com os comandos de voz"
+        );
         return;
       }
       let resposta = await perguntarIA(comando);
@@ -125,7 +128,7 @@ function reconheceComando() {
   recComando.onend = () => {
     console.log("Reconhecimento de comando finalizado");
     reconhecendoComando = false;
-    
+
     // Se TTS ainda está falando, não reinicia reconhecedor agora
     if (!window.speechSynthesis.speaking) {
       reiniciarReconhecedor();
@@ -181,7 +184,7 @@ function prepararParaFala(texto) {
 function falar(texto, nomeDaVoz = "Google português do Brasil") {
   const utterance = new SpeechSynthesisUtterance(texto);
   const voces = window.speechSynthesis.getVoices();
-  const voz = voces.find(v => v.name === nomeDaVoz);
+  const voz = voces.find((v) => v.name === nomeDaVoz);
   if (voz) utterance.voice = voz;
   utterance.rate = 1.0;
 
