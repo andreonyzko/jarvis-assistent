@@ -1,4 +1,6 @@
 async function perguntarIA(texto) {
+  searchFace();
+  console.log("Pergunta pra IA: ", texto);
   const resposta = await fetch(
     "https://jarvis-backend-zna1.onrender.com/api/ia",
     {
@@ -9,7 +11,6 @@ async function perguntarIA(texto) {
   );
   const { resposta: textoIA } = await resposta.json();
 
-  console.log("Resposta da IA: ", textoIA);
-
+  console.log("Retorno da IA: ", textoIA);
   return textoIA;
 }

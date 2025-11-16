@@ -1,209 +1,110 @@
-let reconhecendoComando = false;
-let reconhecedorAtivo = false;
-let recognizer = null;
-
-console.log("Inicializando SpeechRecognition...");
-const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-if (!Recognition) {
-  alert("Seu navegador não suporta Web Speech API/SpeechRecognition.");
-  throw new Error("SpeechRecognition não disponível.");
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SpeechRecognition) {
+  alert("Seu navegador não suporta o reconhecimento de voz!");
+  throw new Error("SpeechRecognition não disponível");
 }
 
-recognizer = new Recognition();
+const recognizer = new SpeechRecognition();
 recognizer.lang = "pt-BR";
 recognizer.continuous = true;
 recognizer.interimResults = false;
-setState("sleep");
 
-recognizer.onstart = () => {
-  reconhecedorAtivo = true;
-};
+const commandRecognizer = new SpeechRecognition();
+commandRecognizer.lang = "pt-BR";
+commandRecognizer.continuous = true;
+commandRecognizer.interimResults = false;
 
-recognizer.onresult = (event) => {
-  if (reconhecendoComando) return; // Não processar se já está no modo comando
+let waitingCommand = false;
 
-  for (let i = event.resultIndex; i < event.results.length; ++i) {
-    if (event.results[i].isFinal) {
-      let transcript = event.results[i][0].transcript.trim().toLowerCase();
-      if (transcript.includes("jarvis")) {
-        // Interrompe fala ativa ANTES de mudar de estado
-        if (window.speechSynthesis.speaking) {
-          window.speechSynthesis.cancel();
+function getHotWord() {
+  return localStorage.getItem("hotword") || "jarvis";
+}
+
+recognizer.onresult = (e) => {
+  if (waitingCommand) return;
+  for (let i = e.resultIndex; i < e.results.length; i++) {
+    if (e.results[i].isFinal) {
+      const transcript = e.results[i][0].transcript.trim().toLowerCase();
+      if (transcript.includes(getHotWord())) {
+        if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+        if (!localStorage.getItem("IAkey")) {
+          falar(
+            "Você precisa configurar uma chave de inteligencia artificial, acessando configurações..."
+          );
+          showSettings();
+          return;
         }
-
-        setState("awake");
-        reconhecendoComando = true;
-
-        // Para o reconhecimento principal com segurança
-        try {
-          recognizer.stop();
-          reconhecedorAtivo = false;
-        } catch (e) {
-          console.log("Erro ao parar recognizer:", e);
-        }
-
-        // Aguarda um pouco e inicia comando
-        setTimeout(() => {
-          reconheceComando();
-        }, 100);
+        listenFace();
+        getCommand();
       }
     }
   }
 };
 
-recognizer.onerror = (event) => {
-  console.log("Erro no reconhecimento principal:", event.error);
+recognizer.onerror = (e) => {
+  if (e.error !== "no-speech") {
+    console.error("Erro no reconhecimento de hotword: ", e.error);
+  }
 };
 
-recognizer.onend = () => {
-  reconhecedorAtivo = false;
-  // Reinicia reconhecimento se não está em modo comando
-  if (!reconhecendoComando) {
+recognizer.onend = (e) => {
+  if (!waitingCommand) {
     setTimeout(() => {
-      try {
-        if (recognizer && !reconhecedorAtivo) {
-          recognizer.start();
-        }
-      } catch (e) {
-        console.log("Erro ao reiniciar recognizer:", e);
-      }
-    }, 300);
+      recognizer.start();
+    }, 500);
   }
 };
 
-// Inicia reconhecimento inicial
-recognizer.start();
+commandRecognizer.onresult = async (e) => {
+  for (let i = e.resultIndex; i < e.results.length; i++) {
+    if (e.results[i].isFinal) {
+      const command = e.results[i][0].transcript.trim().toLowerCase();
+      let willSpeak = false;
 
-// Função para reconhecer comando e integrar Perplexity
-function reconheceComando() {
-  setState("awake");
-  const Recognition =
-    window.SpeechRecognition || window.webkitSpeechRecognition;
-  const recComando = new Recognition();
-  recComando.lang = "pt-BR";
-  recComando.continuous = false;
-  recComando.interimResults = false;
-
-  recComando.onstart = () => {
-    console.log("Reconhecimento de comando iniciado");
-  };
-
-  recComando.onresult = async (event) => {
-    if (!event.results.length) {
-      reconhecendoComando = false;
-      reiniciarReconhecedor();
-      return;
-    }
-
-    let comando = event.results[0][0].transcript.trim();
-    console.log("Comando capturado:", comando);
-    setState("reading");
-
-    try {
-      console.log("Obtendo resposta para:", comando);
-      if (!localStorage.getItem("IAkey")) {
-        falar(
-          "Você precisa configurar a chave da Inteligencia Artificial para prosseguir com os comandos de voz"
-        );
-        return;
+      if (openSettingsCommands.includes(command)) {
+        showSettings();
+      } else if (closeSettingsCommands.includes(command)) {
+        closeSettings();
+      } else if (expressionsCommands.has(command)) {
+        setState(expressionsCommands.get(command));
+      } else if (xingamentos.includes(command)) {
+        swearingFace();
+      } else {
+        willSpeak = true;
+        let resposta = await perguntarIA(command);
+        resposta = prepararParaFala(resposta);
+        falar(resposta);
       }
-      let resposta = await perguntarIA(comando);
-      console.log("Resposta aprimorada:", resposta);
 
-      resposta = prepararParaFala(resposta);
-      falar(resposta);
-    } catch (e) {
-      falar("Desculpe, houve um erro ao tentar responder.");
-      console.log("Erro Perplexity:", e);
-    }
-  };
-
-  recComando.onerror = (event) => {
-    console.log("Erro comando:", event.error);
-    setState("sleep");
-    reconhecendoComando = false;
-    reiniciarReconhecedor();
-  };
-
-  recComando.onend = () => {
-    console.log("Reconhecimento de comando finalizado");
-    reconhecendoComando = false;
-
-    // Se TTS ainda está falando, não reinicia reconhecedor agora
-    if (!window.speechSynthesis.speaking) {
-      reiniciarReconhecedor();
-    }
-  };
-
-  try {
-    recComando.start();
-  } catch (e) {
-    console.log("Erro ao iniciar reconhecimento de comando:", e);
-    reconhecendoComando = false;
-    reiniciarReconhecedor();
-  }
-}
-
-// Função para reiniciar reconhecedor com segurança
-function reiniciarReconhecedor() {
-  setTimeout(() => {
-    try {
-      if (recognizer && !reconhecedorAtivo && !reconhecendoComando) {
+      if (!willSpeak) starthobbieFace();
+      commandRecognizer.stop();
+      waitingCommand = false;
+      setTimeout(() => {
         recognizer.start();
-      }
-    } catch (e) {
-      console.log("Erro ao reiniciar recognizer:", e);
+      }, 500);
     }
-  }, 300);
+  }
+};
+
+commandRecognizer.onerror = (e) => {
+  console.error("Erro no reconhecimento de comando: ", e.error);
+};
+
+commandRecognizer.oneend = (e) => {
+  waitingCommand = false;
+  setTimeout(() => {
+    recognizer.start();
+  }, 500);
+  starthobbieFace();
+};
+
+function getCommand() {
+  waitingCommand = true;
+  recognizer.stop();
+  setTimeout(() => {
+    commandRecognizer.start();
+  }, 500);
 }
 
-async function perguntarIA(texto) {
-  const resposta = await fetch(
-    "https://jarvis-backend-zna1.onrender.com/api/ia",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pergunta: texto }),
-    }
-  );
-  const { resposta: textoIA } = await resposta.json();
-  console.log("Resposta da IA:", textoIA);
-  return textoIA;
-}
-
-// Fala resposta
-function prepararParaFala(texto) {
-  return texto
-    .replace(/\*\*(.*?)\*\*/g, "$1")
-    .replace(/\*/g, "")
-    .replace(/\\n|\n/g, ". ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function falar(texto, nomeDaVoz = "Google português do Brasil") {
-  const utterance = new SpeechSynthesisUtterance(texto);
-  const voces = window.speechSynthesis.getVoices();
-  const voz = voces.find((v) => v.name === nomeDaVoz);
-  if (voz) utterance.voice = voz;
-  utterance.rate = 1.0;
-
-  utterance.onstart = () => {
-    setState("reading");
-  };
-
-  utterance.onend = () => {
-    setState("sleep");
-    reconhecendoComando = false;
-    reiniciarReconhecedor();
-  };
-
-  utterance.onerror = (event) => {
-    console.log("Erro ao falar:", event.error);
-    setState("sleep");
-    reconhecendoComando = false;
-    reiniciarReconhecedor();
-  };
-
-  window.speechSynthesis.speak(utterance);
-}
+recognizer.start();

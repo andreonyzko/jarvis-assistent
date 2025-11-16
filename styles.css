@@ -12,17 +12,18 @@
 }
 
 body {
-  background: #000;
+  background: black;
   height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-button{
-    cursor: pointer;
-    background-color: transparent;
-    border: 0;
+button {
+  background-color: transparent;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
 }
 
 #face-img {
@@ -32,11 +33,19 @@ button{
   box-shadow: 0 0 40px var(--blue);
 }
 
-#config-container {
+#settings-container {
   display: none;
   position: absolute;
+  background-color: var(--light_black);
+  padding: 30px;
+  border-radius: 10px;
+  width: 70vw;
+  height: 80vh;
+  overflow: auto;
+  flex-direction: column;
+  gap: 30px;
 
-  #config-header {
+  #settings-header {
     display: flex;
 
     h1 {
@@ -44,60 +53,61 @@ button{
     }
   }
 
-  form {
-    min-width: 50vw;
-    background-color: var(--dark);
+  #settings-feedback{
+    display: none;
+    background-color: #216e9a29;
+    border: 1px solid var(--blue);
     border-radius: 20px;
-    padding: 20px;
+    padding: 10px;
+    text-align: center;
+  }
+
+  form {
+    height: 100%;
+
     display: flex;
     flex-direction: column;
-    gap: 30px;
+    gap: 20px;
 
-    h1 {
-      font-weight: normal;
+    fieldset {
+      border: 0;
+      padding: 10px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+
+      legend {
+        font-size: 1em;
+        font-weight: bold;
+      }
     }
 
-    > p {
+    .input-field {
       display: flex;
       flex-direction: column;
       gap: 10px;
-    }
 
-    label {
-      color: var(--blue);
-    }
+      input {
+        background-color: var(--dark);
+        border: none;
+        padding: 10px;
+        border-radius: 5px;
+        border-bottom: 1px solid var(--blue);
+        border-top: 1px solid var(--blue);
 
-    input {
-      border: 0;
-      background-color: var(--light_black);
-      padding: 10px;
-      border-radius: 5px;
-
-      &:focus {
-        outline: 0;
+        &:focus {
+          outline: 1px solid var(--blue);
+        }
       }
     }
 
     button[type="submit"] {
-      padding: 15px;
       background-color: var(--blue);
-      font-size: 1.1em;
-      border: 0;
+      color: white;
+      padding: 10px 20px;
+      font-size: 1em;
+      align-self: end;
+      justify-self: flex-end;
     }
-  }
-}
-
-#config-icon {
-  display: block;
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  padding: 10px;
-
-  svg {
-    width: 50px;
-    fill: var(--blue);
-    opacity: 0.5;
-    cursor: pointer;
   }
 }

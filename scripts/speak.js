@@ -1,4 +1,5 @@
 function prepararParaFala(texto) {
+  console.log("Melhorando: ", texto);
   // Remove Markdown e caracteres especiais
   return texto
     .replace(/\*\*(.*?)\*\*/g, "$1") // remove **negrito**
@@ -11,7 +12,9 @@ function prepararParaFala(texto) {
 function falar(texto) {
   const utterance = new SpeechSynthesisUtterance(texto);
   utterance.onend = () => {
-    setState("sleep");
+    starthobbieFace();
   };
+  
   window.speechSynthesis.speak(utterance);
+  speakFace();
 }

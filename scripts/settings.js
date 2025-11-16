@@ -1,27 +1,35 @@
-const configBtn = document.querySelector("#config-icon");
-const configModal = document.querySelector("#config-container");
-const configCloseModalBtn = document.querySelector("#close-config-btn");
-const configForm = document.querySelector("#config-form");
-const IAkeyInput = document.querySelector("#apikey");
+const settingsModal = document.querySelector("#settings-container");
+const settingsCloseBtn = document.querySelector("#close-settings-btn");
+const settingsForm = document.querySelector("#settings-form");
+const settingsFeedback = document.querySelector("#settings-feedback");
 
-configBtn.addEventListener("click", () => {
-  configModal.style.display = "block";
-  IAkeyInput.value = localStorage.getItem("IAkey");
+function showSettings() {
+  settingsModal.style.display = "flex";
+  document.querySelectorAll("#settings-form input").forEach((field) => {
+    field.value = localStorage.getItem(field.id);
+  });
+}
+
+function closeSettings() {
+  settingsModal.style.display = "none";
+}
+
+settingsCloseBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  closeSettings();
 });
 
-configCloseModalBtn.addEventListener("click", (e) => {
+settingsForm.addEventListener("submit", (e) => {
   e.preventDefault();
-  configModal.style.display = "none";
-});
+  document.querySelectorAll("#settings-form input").forEach((field) => {
+    localStorage.setItem(field.id, field.value);
+  });
 
-configForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const IAkey = IAkeyInput.value;
-  
-  if (!IAkey) return;
-  localStorage.setItem("IAkey", IAkey);
-
-  configModal.style.display = "none";
+  settingsFeedback.textContent = "As configurações foram salvas!";
+  settingsFeedback.style.display = "block";
+  setTimeout(() => {
+    settingsFeedback.style.display = "none";
+  }, 2000);
 });
 
 function getIAkey() {
